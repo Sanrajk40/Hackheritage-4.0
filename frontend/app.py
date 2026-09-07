@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import time
 from PIL import Image
+import requests
 
 st.set_page_config(
     page_title="SecureID | SSB Border Checkpoint",
@@ -60,9 +61,33 @@ def login_page():
                         "user_id": user_id,
                         "airport_id": airport_id
                     }
-                    st.success("Authentication successful! Initializing secure session...")
-                    time.sleep(1.5)
-                    st.rerun() 
+                    payload={
+                        "username": username,
+                        "email": email,
+                        "user_id": user_id,
+                        "airport_id": airport_id,
+                        "password":password
+
+                    }
+                    django_url='http://127.0.0.1:8000/api/authenticate_global'
+                    response=requests.post(django_url,json=payload)
+                    if response.status_code==200:
+                        value=response.json().get('value')
+                        if value=='5':
+                            st.error("A user with this user name is already logged in")
+                        elif value=='1':
+                             st.success("Authentication successful! Initializing secure session...")
+                             time.sleep(1.5)
+                             st.rerun()
+                        elif value =='0':
+                            st.warning('No user name with this userid exists')
+                        elif value =='4':
+                            st.warning('Password Doesnot match')
+                        elif value =='2':
+                            st.error("Airport id does not match")
+
+
+                    
                 else:
                     st.error("Please fill in all mandatory fields (Email, Username, Password, User ID).")
 
@@ -82,6 +107,13 @@ def main_app():
         
         if st.button("Logout", type="secondary", use_container_width=True):
             st.session_state.logged_in = False
+            django_url='http://127.0.0.1:8000/api/logout_global'
+            z=False
+            usid = st.session_state.user_info['user_id']
+            m={'logout':z,'userid':usid}
+            response=requests.post(django_url,json=m)
+            if response.status_code==200:
+                st.success("Loggged Out Successfully")
             st.session_state.user_info = {}
             st.rerun()
     if app_mode == "Dashboard & Scanning":

@@ -4,6 +4,7 @@ from django.db import models
 class globe_employee(models.Model):
     name= models.CharField(max_length=100)
     empid = models.CharField(max_length=50)
-    airport_no =models.CharField(max_length=10)
+    airport_no =models.CharField(max_length=100)
     active_status = models.BooleanField(default=False)
-    password = models.CharField()
+    mail =models.CharField(default='k@gmail.com')
+    password = models.CharField(default='smp')

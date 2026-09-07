@@ -21,5 +21,6 @@ from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('',views.addGlobalemp,name='Globally adding')
+    path('api/authenticate_global',views.addGlobalemp,name='Globally adding'),
+    path('api/logout_global',views.logout_global,name='Globally Logout')
 ]
