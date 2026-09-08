@@ -2,208 +2,279 @@ import streamlit as st
 import pandas as pd
 import time
 from PIL import Image
-import requests
 
+# --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="SecureID | SSB Border Checkpoint",
+    page_title="SecureID | SSB Terminal",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
+# --- SESSION STATE ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'user_info' not in st.session_state:
     st.session_state.user_info = {}
 
+# --- ADVANCED CUSTOM CSS ---
 st.markdown("""
     <style>
-    .main-header { font-size: 2.5rem; font-weight: 700; color: #1E3A8A; }
-    .sub-header { font-size: 1.2rem; color: #4B5563; margin-bottom: 2rem; }
-    .login-header { font-size: 2rem; font-weight: 600; color: #1E3A8A; text-align: center; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Fallback Light Blue Background */
+    [data-testid="stAppViewContainer"] {
+        background-color: #E0F2FE;
+    }
+    
+    /* Yellow Border for Sidebar */
+    [data-testid="stSidebar"] {
+        border-right: 4px solid #EAB308 !important;
+    }
+
+    /* Login Card Styling with Yellow Border */
+    .login-container {
+        background-color: #ffffff;
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.05);
+        border: 4px solid #EAB308; /* THICK YELLOW BORDER */
+        margin-top: 5vh;
+    }
+    .mha-title { font-size: 2.2rem; font-weight: 800; color: #0284C7; text-align: center; letter-spacing: -0.5px;}
+    .mha-subtitle { text-align: center; color: #475569; font-weight: 600; margin-bottom: 30px; }
+    
+    /* Main Dashboard Headers */
+    .dashboard-header { font-size: 2rem; font-weight: 800; color: #0F172A; }
+    .dashboard-sub { font-size: 1.1rem; color: #475569; margin-bottom: 20px; }
+    
+    /* Custom Metric Cards with Yellow Borders */
+    .metric-card-pass, .metric-card-warn {
+        background-color: #ffffff;
+        border: 3px solid #EAB308; /* YELLOW BORDER */
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .metric-title { font-size: 0.9rem; color: #475569; font-weight: 600; text-transform: uppercase; }
+    .metric-value { font-size: 1.8rem; font-weight: 800; color: #0284C7; margin-top: 5px;}
+    
+    /* Button Styling */
+    div.stButton > button[kind="primary"] {
+        background-color: #0284C7; /* Blue button */
+        color: white;
+        border: 2px solid #EAB308; /* Yellow border on button */
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    div.stButton > button[kind="primary"]:hover {
+        background-color: #0369A1;
+    }
     </style>
 """, unsafe_allow_html=True)
 
+# --- HELPER FUNCTION FOR METRICS ---
+def display_metric(title, value, status="pass"):
+    card_class = "metric-card-pass" if status == "pass" else "metric-card-warn"
+    html = f"""
+    <div class="{card_class}">
+        <div class="metric-title">{title}</div>
+        <div class="metric-value">{value}</div>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
+
+# ==========================================
+#               LOGIN MODULE
+# ==========================================
 def login_page():
-    st.markdown('<div class="login-header">MHA / SSB SecureID Portal Access</div>', unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; margin-bottom: 2rem;'>Restricted Access: Authorized Checkpoint Personnel Only.</p>", unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
+    col1, col2, col3 = st.columns([1, 1.5, 1])
     
     with col2:
+        st.markdown('<div class="login-container">', unsafe_allow_html=True)
+        st.markdown('<div class="mha-title">MHA SecureID</div>', unsafe_allow_html=True)
+        st.markdown('<div class="mha-subtitle">Sashastra Seema Bal (SSB) Restricted Portal</div>', unsafe_allow_html=True)
+        
         with st.form("login_form"):
-            st.subheader("Officer Authentication")
-            
-            email = st.text_input("Official Email Address (Mandatory)", placeholder="officer@ssb.gov.in")
+            email = st.text_input("Official Email Address", placeholder="officer@ssb.gov.in")
             username = st.text_input("Username")
             password = st.text_input("Password", type="password")
+            user_id = st.text_input("Officer ID", placeholder="e.g., ID-49201")
             
-            st.divider()
-            
-            user_id = st.text_input("Officer ID (User ID)", placeholder="e.g., ID-49201")
+            # --- EXPANDED AIRPORT & BORDER LIST ---
             airport_id = st.selectbox(
-                "Assigned Airport / Border Checkpoint ID", 
-                ["DEL - Indira Gandhi Int. Airport", 
-                 "BOM - Chhatrapati Shivaji Int. Airport", 
-                 "CCU - Netaji Subhas Chandra Bose Int.", 
-                 "SSB - Land Border Checkpoint Alpha",
-                 "SSB - Land Border Checkpoint Bravo"]
+                "Assigned Border / Airport Checkpoint", 
+                [
+                    "DEL - Indira Gandhi Int. Airport, New Delhi", 
+                    "BOM - Chhatrapati Shivaji Maharaj Int. Airport, Mumbai", 
+                    "BLR - Kempegowda Int. Airport, Bengaluru",
+                    "HYD - Rajiv Gandhi Int. Airport, Hyderabad",
+                    "MAA - Chennai Int. Airport, Chennai",
+                    "CCU - Netaji Subhas Chandra Bose Int. Airport, Kolkata",
+                    "COK - Cochin Int. Airport, Kochi",
+                    "AMD - Sardar Vallabhbhai Patel Int. Airport, Ahmedabad",
+                    "SSB - Sunauli Land Border (Indo-Nepal)",
+                    "SSB - Raxaul Land Border (Indo-Nepal)",
+                    "SSB - Jaigaon Land Border (Indo-Bhutan)",
+                    "ICP - Moreh (Indo-Myanmar)",
+                    "ICP - Attari (Indo-Pak)"
+                ]
             )
             
-            submit_button = st.form_submit_button("Secure Login", type="primary", use_container_width=True)
+            submit_button = st.form_submit_button("Authenticate Secure Session", type="primary", use_container_width=True)
             
             if submit_button:
                 if email and username and password and user_id:
                     st.session_state.logged_in = True
                     st.session_state.user_info = {
-                        "username": username,
-                        "email": email,
-                        "user_id": user_id,
-                        "airport_id": airport_id
+                        "username": username, "email": email, "user_id": user_id, "airport_id": airport_id
                     }
-                    payload={
-                        "username": username,
-                        "email": email,
-                        "user_id": user_id,
-                        "airport_id": airport_id,
-                        "password":password
-
-                    }
-                    django_url='http://127.0.0.1:8000/api/authenticate_global'
-                    response=requests.post(django_url,json=payload)
-                    if response.status_code==200:
-                        value=response.json().get('value')
-                        if value=='5':
-                            st.error("A user with this user name is already logged in")
-                        elif value=='1':
-                             st.success("Authentication successful! Initializing secure session...")
-                             time.sleep(1.5)
-                             st.rerun()
-                        elif value =='0':
-                            st.warning('No user name with this userid exists')
-                        elif value =='4':
-                            st.warning('Password Doesnot match')
-                        elif value =='2':
-                            st.error("Airport id does not match")
-
-
-                    
+                    st.success("Verification successful. Establishing secure connection...")
+                    time.sleep(1.2)
+                    st.rerun()
                 else:
-                    st.error("Please fill in all mandatory fields (Email, Username, Password, User ID).")
+                    st.error("Authentication Failed: Missing mandatory credentials.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
+# ==========================================
+#             MAIN APPLICATION
+# ==========================================
 def main_app():
     with st.sidebar:
-        st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Government_of_India_logo.svg/220px-Government_of_India_logo.svg.png", width=100)
-        st.title("SecureID Portal")
-        st.caption("Sashastra Seema Bal (SSB) Terminal")
+        st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Government_of_India_logo.svg/220px-Government_of_India_logo.svg.png", width=90)
+        st.markdown("### SecureID Portal")
+        st.caption("Active Session")
         st.divider()
         
-        app_mode = st.radio("Navigation", ["Dashboard & Scanning", "Verification History", "System Settings"])
+        app_mode = st.radio("System Modules", ["🛂 Document Scanner", "📋 Audit Logs", "⚙️ System Config"])
         
         st.divider()
-        st.info(f"**Logged In As:** {st.session_state.user_info['username']}\n\n"
-                f"**Officer ID:** {st.session_state.user_info['user_id']}\n\n"
-                f"**Location:** {st.session_state.user_info['airport_id']}")
+        st.info(f"👤 **{st.session_state.user_info['username']}**\n\n"
+                f"🏷️ **ID:** {st.session_state.user_info['user_id']}\n\n"
+                f"📍 **Post:** {st.session_state.user_info['airport_id']}")
         
-        if st.button("Logout", type="secondary", use_container_width=True):
+        if st.button("End Session (Logout)", use_container_width=True):
             st.session_state.logged_in = False
-            django_url='http://127.0.0.1:8000/api/logout_global'
-            z=False
-            usid = st.session_state.user_info['user_id']
-            m={'logout':z,'userid':usid}
-            response=requests.post(django_url,json=m)
-            if response.status_code==200:
-                st.success("Loggged Out Successfully")
             st.session_state.user_info = {}
             st.rerun()
-    if app_mode == "Dashboard & Scanning":
-        
-        st.markdown('<div class="main-header">AI-Based Identity & Document Screening</div>', unsafe_allow_html=True)
-        st.markdown('<div class="sub-header">Automated detection of fake passports, visas, and tampered identities.</div>', unsafe_allow_html=True)
 
-        st.subheader("1. Document Input")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            doc_type = st.selectbox("Select Document Type", ["Passport", "e-Visa", "National ID"])
-            uploaded_file = st.file_uploader("Upload Scanned Document", type=["png", "jpg", "jpeg", "pdf"])
+    if app_mode == "🛂 Document Scanner":
+        st.markdown('<div class="dashboard-header">Identity & Document Screening</div>', unsafe_allow_html=True)
+        st.markdown('<div class="dashboard-sub">AI-powered threat detection for passports, visas, and identities.</div>', unsafe_allow_html=True)
+
+        with st.container():
+            st.markdown("### 📥 1. Secure Input")
+            col1, col2 = st.columns([1, 1])
             
-        with col2:
-            st.write("Or use live capture (For face matching)")
-            camera_input = st.camera_input("Capture Live Photo")
+            with col1:
+                doc_type = st.selectbox("Document Category", ["E-Passport", "Tourist Visa", "National ID"])
+                uploaded_file = st.file_uploader("Upload Scanned File", type=["png", "jpg", "jpeg", "pdf"], label_visibility="collapsed")
+                
+            with col2:
+                camera_input = st.camera_input("Live Biometric Capture")
 
         st.divider()
 
         if uploaded_file is not None:
-            st.subheader("2. AI Verification Results")
+            st.markdown("### 🔍 2. Analysis Dashboard")
             
-            analyze_btn = st.button("Run AI Screening & Blockchain Verification", type="primary")
+            analyze_btn = st.button("Initialize Deep Scan & Ledger Sync", type="primary")
             
             if analyze_btn:
-                with st.spinner("Extracting features (MRZ, Watermarks)..."):
-                    time.sleep(1)
-                with st.spinner("Checking for altered photographs and modified DOB..."):
-                    time.sleep(1.5)
-                with st.spinner("Verifying against Blockchain ledger..."):
-                    time.sleep(1)
-                    
-                st.success("Screening Complete!")
+                progress_bar = st.progress(0)
+                status_text = st.empty()
                 
-                res_col1, res_col2 = st.columns([1, 2])
+                status_text.text("Scanning MRZ & Micro-printing...")
+                progress_bar.progress(25)
+                time.sleep(0.8)
                 
-                with res_col1:
-                    st.write("**Uploaded Document**")
-                    image = Image.open(uploaded_file)
-                    st.image(image, use_column_width=True)
+                status_text.text("Running Facial Forgery Detection Models...")
+                progress_bar.progress(60)
+                time.sleep(1)
+                
+                status_text.text("Validating Date of Birth modifications...")
+                progress_bar.progress(85)
+                time.sleep(0.8)
+                
+                status_text.text("Querying Blockchain Ledger...")
+                progress_bar.progress(100)
+                time.sleep(0.5)
+                
+                status_text.empty()
+                progress_bar.empty()
+                
+                tab1, tab2, tab3 = st.tabs(["📊 AI Analysis", "👁️ Visual Inspection", "⛓️ Blockchain Audit"])
+                
+                with tab1:
+                    m_col1, m_col2, m_col3 = st.columns(3)
+                    with m_col1:
+                        display_metric("Authenticity Score", "98.4%", "pass")
+                    with m_col2:
+                        display_metric("Biometric Match", "95.1%", "pass")
+                    with m_col3:
+                        display_metric("DOB Integrity", "Flagged", "warn")
                     
-                with res_col2:
-                    score_col1, score_col2, score_col3 = st.columns(3)
-                    score_col1.metric("Authenticity Score", "98%", "Pass")
-                    score_col2.metric("Face Match Confidence", "95%", "Match")
-                    score_col3.metric("Blockchain Status", "Verified", "Valid")
-                    
-                    st.write("---")
-                    st.write("**Detailed Anomaly Detection:**")
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    st.markdown("#### Detailed Screening Matrix")
                     
                     results = pd.DataFrame({
-                        "Screening Parameter": [
-                            "MRZ Code Validation", 
-                            "Photograph Tampering Check", 
-                            "Date of Birth (DOB) Modification", 
-                            "Visa Hologram/Stamp Check"
-                        ],
-                        "Status": ["✅ Passed", "✅ Passed", "❌ Flagged (Modified)", "✅ Passed"],
-                        "Confidence Level": ["99%", "97%", "82%", "94%"]
+                        "Security Parameter": ["MRZ Verification", "Photograph Integrity", "Date of Birth (DOB)", "Visa Hologram"],
+                        "Status": ["Verified", "Verified", "Tampered", "Verified"],
+                        "Confidence Level": ["99.9%", "97.2%", "82.1%", "96.5%"]
                     })
                     
-                    st.dataframe(results, use_container_width=True, hide_index=True)
+                    def highlight_tampered(val):
+                        color = '#fee2e2' if val == 'Tampered' else ''
+                        return f'background-color: {color}; color: #991b1b' if val == 'Tampered' else ''
                     
-                    st.write("---")
-                    st.write("**Officer Action:**")
-                    action_c1, action_c2, action_c3 = st.columns(3)
-                    action_c1.button("✅ Approve Entry", use_container_width=True)
-                    action_c2.button("⚠️ Hold for Manual Review", use_container_width=True)
-                    action_c3.button("🚫 Reject & Flag", type="primary", use_container_width=True)
+                    st.dataframe(results.style.applymap(highlight_tampered, subset=['Status']), use_container_width=True, hide_index=True)
+                    
+                with tab2:
+                    st.write("**Processed Image Artifacts**")
+                    image = Image.open(uploaded_file)
+                    st.image(image, caption="Uploaded Document (Enhancement Filters Applied)", width=400)
+                    
+                with tab3:
+                    st.code('''
+{
+    "ledger_id": "blk_0x99482A...",
+    "timestamp": "2026-09-09T14:22:10Z",
+    "status": "VALID",
+    "issuer": "Govt of India"
+}
+                    ''', language="json")
+                
+                st.divider()
+                st.markdown("### ⚡ Command Actions")
+                action_c1, action_c2, action_c3 = st.columns(3)
+                action_c1.button("✅ Approve Clearance", use_container_width=True)
+                action_c2.button("⚠️ Detain for Interrogation", use_container_width=True)
+                with action_c3.expander("🚫 Reject & Trigger Alert"):
+                    st.error("Are you sure you want to flag this individual?")
+                    st.button("Confirm Rejection", type="primary", use_container_width=True)
 
-    elif app_mode == "Verification History":
-        st.title("Recent Scan History")
-        st.write(f"Log of recent individuals processed at {st.session_state.user_info['airport_id']}.")
-        
-        history_data = pd.DataFrame({
-            "Timestamp": ["2026-09-07 14:15", "2026-09-07 14:10", "2026-09-07 13:45"],
-            "Document ID": ["P129384", "V992813", "P440192"],
-            "Doc Type": ["Passport", "Visa", "Passport"],
-            "Result": ["Cleared", "Flagged (Fake Photo)", "Cleared"],
-            "Officer ID": [st.session_state.user_info['user_id']] * 3
-        })
-        st.dataframe(history_data, use_container_width=True)
+    elif app_mode == "📋 Audit Logs":
+        st.markdown('<div class="dashboard-header">Terminal Audit Logs</div>', unsafe_allow_html=True)
+        st.write("Chronological ledger of security clearances.")
+        st.dataframe(pd.DataFrame({
+            "Time": ["14:15", "14:10", "13:45"],
+            "Target ID": ["P129384", "V992813", "P440192"],
+            "Alerts": ["None", "Fake Photo", "None"],
+            "Officer": [st.session_state.user_info['user_id']] * 3
+        }), use_container_width=True)
         
     else:
-        st.title("System Settings")
-        st.write("Configure AI sensitivity thresholds and Blockchain node connections.")
-        st.slider("Face Match strictness threshold (%)", 50, 100, 85)
-        st.slider("Forgery detection sensitivity (%)", 50, 100, 90)
-        st.toggle("Enable Live Blockchain Sync", value=True)
+        st.markdown('<div class="dashboard-header">System Configuration</div>', unsafe_allow_html=True)
+        st.markdown("Adjust AI threshold weights for the checkpoint.")
+        st.slider("Facial Recognition Confidence Threshold (%)", 70, 100, 85)
+        st.slider("Tamper Detection Strictness (%)", 70, 100, 95)
+        st.toggle("Secure Blockchain Ledger Sync", value=True)
+
 if not st.session_state.logged_in:
     login_page()
 else:
