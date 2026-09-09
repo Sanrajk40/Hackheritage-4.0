@@ -1,0 +1,167 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --navy-deep: #061121;
+    --navy-mid: #0B1F3A;
+    --blue-primary: #02639B;
+    --bg-cool: #2353ff;
+    --surface: #f4430d;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --accent-gold: #D4A017;
+    --accent-gold-light: #FCEFC7;
+    --status-success: #15803D;
+    --status-warning: #B45309;
+    --status-danger: #B91C1C;
+    --border-subtle: #E2E8F0;
+    --shadow-soft: 0 12px 32px rgba(11, 31, 58, 0.05);
+    --shadow-hover: 0 20px 40px rgba(53, 164, 86, 0.08);
+}
+
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* --- Application Background & Animations --- */
+[data-testid="stAppViewContainer"] {
+    background-color: var(--bg-cool);
+    background-image: radial-gradient(circle at top right, rgba(2, 99, 155, 0.03) 0%, transparent 40%);
+    animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+[data-testid="stHeader"] {
+    background-color: transparent;
+}
+
+/* --- Premium Sidebar --- */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, var(--navy-deep) 0%, var(--navy-mid) 100%) !important;
+    border-right: 1px solid rgba(212, 160, 23, 0.2) !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.1);
+}
+
+[data-testid="stSidebar"] * { color: #F8FAFC; }
+[data-testid="stSidebar"] hr { border-color: rgba(255, 255, 255, 0.08); }
+
+/* Sidebar radio navigation */
+[data-testid="stSidebar"] div[role="radiogroup"] label {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 10px 12px !important;
+    margin-bottom: 4px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+[data-testid="stSidebar"] div[role="radiogroup"] label:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    transform: translateX(4px);
+}
+[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) {
+    background: linear-gradient(90deg, rgba(3, 105, 161, 0.4) 0%, rgba(3, 105, 161, 0.1) 100%);
+    border-left: 3px solid var(--accent-gold);
+}
+
+/* --- Login & Dashboard Cards --- */
+.login-header-card, div[data-testid="stForm"], .metric-card-pass, .metric-card-warn, [data-testid="stVerticalBlockBorderWrapper"] {
+    background-color: var(--surface);
+    border-radius: 16px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+div[data-testid="stForm"]:hover, [data-testid="stVerticalBlockBorderWrapper"]:hover {
+    box-shadow: var(--shadow-hover);
+}
+
+.login-header-card { padding: 32px 40px 24px 40px; margin-top: 4vh; }
+div[data-testid="stForm"] { padding: 32px 40px; }
+
+/* --- Typography Elevaton --- */
+.mha-title { font-size: 2.2rem; font-weight: 800; color: var(--navy-deep); letter-spacing: -0.8px; }
+.mha-subtitle { color: var(--text-secondary); font-weight: 500; font-size: 1rem; }
+.mha-gold-underline {
+    width: 60px; height: 4px;
+    background: linear-gradient(90deg, var(--accent-gold) 0%, #FDE047 100%);
+    margin: 12px auto 16px auto;
+    border-radius: 4px;
+}
+
+.dashboard-header { font-size: 2.2rem; font-weight: 800; color: var(--navy-deep); letter-spacing: -0.5px; }
+
+/* --- Inputs & Selects --- */
+div[data-baseweb="input"] > div, div[data-baseweb="select"] > div {
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle) !important;
+    background-color: #F8FAFC !important;
+    transition: all 0.2s ease;
+}
+div[data-baseweb="input"] > div:focus-within, div[data-baseweb="select"] > div:focus-within {
+    border: 1px solid var(--blue-primary) !important;
+    box-shadow: 0 0 0 3px rgba(2, 99, 155, 0.15) !important;
+    background-color: var(--surface) !important;
+}
+
+/* --- Premium Buttons --- */
+div.stButton > button[kind="primary"], div[data-testid="stFormSubmitButton"] > button {
+    background: linear-gradient(135deg, var(--blue-primary) 0%, var(--navy-deep) 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    padding: 0.6rem 1.5rem;
+    box-shadow: 0 4px 14px rgba(2, 99, 155, 0.3);
+    transition: all 0.3s ease;
+}
+div.stButton > button[kind="primary"]:hover, div[data-testid="stFormSubmitButton"] > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(2, 99, 155, 0.4);
+}
+
+/* Secondary / Danger Buttons */
+[data-testid="stSidebar"] div.stButton > button {
+    background-color: rgba(185, 28, 28, 0.05) !important;
+    border: 1px solid rgba(185, 28, 28, 0.2) !important;
+    transition: all 0.2s ease;
+}
+[data-testid="stSidebar"] div.stButton > button:hover {
+    background-color: rgba(185, 28, 28, 0.8) !important;
+    color: white !important;
+}
+
+/* --- Custom Metric Cards --- */
+.metric-card-pass, .metric-card-warn {
+    padding: 24px;
+    border-left: none;
+    position: relative;
+    overflow: hidden;
+}
+.metric-card-pass::before, .metric-card-warn::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0; width: 4px;
+}
+.metric-card-pass::before { background: var(--status-success); }
+.metric-card-warn::before { background: var(--accent-gold); }
+
+.metric-title { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.8px; }
+.metric-value { font-size: 2.2rem; font-weight: 800; color: var(--navy-deep); }
+
+/* --- File Uploader Enhancement --- */
+[data-testid="stFileUploaderDropzone"] {
+    background-color: #F8FAFC;
+    border: 2px dashed #CBD5E1;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+[data-testid="stFileUploaderDropzone"]:hover {
+    border-color: var(--blue-primary);
+    background-color: rgba(2, 99, 155, 0.02);
+}

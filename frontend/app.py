@@ -17,67 +17,17 @@ if 'logged_in' not in st.session_state:
 if 'user_info' not in st.session_state:
     st.session_state.user_info = {}
 
-# --- ADVANCED CUSTOM CSS ---
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-    }
-    
-    /* Fallback Light Blue Background */
-    [data-testid="stAppViewContainer"] {
-        background-color: #E0F2FE;
-    }
-    
-    /* Yellow Border for Sidebar */
-    [data-testid="stSidebar"] {
-        border-right: 4px solid #EAB308 !important;
-    }
+import os
 
-    /* Login Card Styling with Yellow Border */
-    .login-container {
-        background-color: #ffffff;
-        padding: 40px;
-        border-radius: 12px;
-        box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.05);
-        border: 4px solid #EAB308; /* THICK YELLOW BORDER */
-        margin-top: 5vh;
-    }
-    .mha-title { font-size: 2.2rem; font-weight: 800; color: #0284C7; text-align: center; letter-spacing: -0.5px;}
-    .mha-subtitle { text-align: center; color: #475569; font-weight: 600; margin-bottom: 30px; }
-    
-    /* Main Dashboard Headers */
-    .dashboard-header { font-size: 2rem; font-weight: 800; color: #0F172A; }
-    .dashboard-sub { font-size: 1.1rem; color: #475569; margin-bottom: 20px; }
-    
-    /* Custom Metric Cards with Yellow Borders */
-    .metric-card-pass, .metric-card-warn {
-        background-color: #ffffff;
-        border: 3px solid #EAB308; /* YELLOW BORDER */
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    }
-    
-    .metric-title { font-size: 0.9rem; color: #475569; font-weight: 600; text-transform: uppercase; }
-    .metric-value { font-size: 1.8rem; font-weight: 800; color: #0284C7; margin-top: 5px;}
-    
-    /* Button Styling */
-    div.stButton > button[kind="primary"] {
-        background-color: #0284C7; /* Blue button */
-        color: white;
-        border: 2px solid #EAB308; /* Yellow border on button */
-        border-radius: 6px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-    div.stButton > button[kind="primary"]:hover {
-        background-color: #0369A1;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# --- LOAD EXTERNAL CSS ---
+def load_css(file_name):
+    with open(file_name) as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
+try:
+    load_css("design.css")
+except FileNotFoundError:
+    st.warning("design.css not found. Please ensure it is in the same folder as app.py")
 # --- HELPER FUNCTION FOR METRICS ---
 def display_metric(title, value, status="pass"):
     card_class = "metric-card-pass" if status == "pass" else "metric-card-warn"
@@ -96,11 +46,19 @@ def login_page():
     col1, col2, col3 = st.columns([1, 1.5, 1])
     
     with col2:
-        st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        st.markdown('<div class="mha-title">MHA SecureID</div>', unsafe_allow_html=True)
-        st.markdown('<div class="mha-subtitle">Sashastra Seema Bal (SSB) Restricted Portal</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="login-header-card">'
+            '<span class="login-classification">Authorized Personnel Only</span>'
+            '<div class="mha-title">MHA SecureID</div>'
+            '<div class="mha-gold-underline"></div>'
+            '<div class="mha-subtitle">Sashastra Seema Bal (SSB) Restricted Portal</div>'
+            '<div class="login-security-note">This terminal is restricted to authorized SSB personnel. All access attempts are logged.</div>'
+            '</div>',
+            unsafe_allow_html=True
+        )
         
-        with st.form("login_form"):
+        with st.form("login_form", border=False):
+            st.markdown('<div class="login-form-heading">Officer Credentials</div>', unsafe_allow_html=True)
             email = st.text_input("Official Email Address", placeholder="officer@ssb.gov.in")
             username = st.text_input("Username")
             password = st.text_input("Password", type="password")
@@ -139,44 +97,80 @@ def login_page():
                     st.rerun()
                 else:
                     st.error("Authentication Failed: Missing mandatory credentials.")
-        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="login-footer-note">MHA SecureID · Government of India · SSB Restricted Network</div>', unsafe_allow_html=True)
 
 # ==========================================
 #             MAIN APPLICATION
 # ==========================================
 def main_app():
     with st.sidebar:
-        st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Government_of_India_logo.svg/220px-Government_of_India_logo.svg.png", width=90)
-        st.markdown("### SecureID Portal")
+        # NOTE (Phase 3): the previous st.image() call hotlinked an external
+        # Wikipedia-hosted asset, which is what was rendering as a broken image.
+        # Per the Phase 3 preservation rule, no logo/emblem is invented — this
+        # is a clean text-based identity treatment instead, with no external
+        # image dependency and no application-logic change.
+        st.markdown(
+            '<div class="sb-gov-badge">'
+            '<div class="sb-gov-badge-mark">GoI</div>'
+            '<div class="sb-gov-badge-text">Government<br/>of India</div>'
+            '</div>',
+            unsafe_allow_html=True
+        )
+        st.markdown(
+            '<div class="sb-brand-title">SecureID Portal</div>'
+            '<div class="sb-brand-sub">Government security terminal</div>',
+            unsafe_allow_html=True
+        )
         st.caption("Active Session")
         st.divider()
-        
-        app_mode = st.radio("System Modules", ["🛂 Document Scanner", "📋 Audit Logs", "⚙️ System Config"])
-        
+
+        st.markdown('<div class="sb-section-label">System Modules</div>', unsafe_allow_html=True)
+        app_mode = st.radio(
+            "System Modules",
+            ["🛂 Document Scanner", "📋 Audit Logs", "⚙️ System Config"],
+            label_visibility="collapsed"
+        )
+
         st.divider()
-        st.info(f"👤 **{st.session_state.user_info['username']}**\n\n"
-                f"🏷️ **ID:** {st.session_state.user_info['user_id']}\n\n"
-                f"📍 **Post:** {st.session_state.user_info['airport_id']}")
-        
+
+        st.markdown('<div class="sb-section-label">Current Officer</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="sb-officer-card">'
+            f'<div class="sb-officer-row"><span class="sb-officer-icon">👤</span>{st.session_state.user_info["username"]}</div>'
+            f'<div class="sb-officer-row"><span class="sb-officer-icon">🏷️</span>ID: {st.session_state.user_info["user_id"]}</div>'
+            f'<div class="sb-officer-row"><span class="sb-officer-icon">📍</span>{st.session_state.user_info["airport_id"]}</div>'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
         if st.button("End Session (Logout)", use_container_width=True):
             st.session_state.logged_in = False
             st.session_state.user_info = {}
             st.rerun()
 
     if app_mode == "🛂 Document Scanner":
+        st.markdown('<div class="op-header-eyebrow">Document Scanner Module</div>', unsafe_allow_html=True)
         st.markdown('<div class="dashboard-header">Identity & Document Screening</div>', unsafe_allow_html=True)
         st.markdown('<div class="dashboard-sub">AI-powered threat detection for passports, visas, and identities.</div>', unsafe_allow_html=True)
 
-        with st.container():
-            st.markdown("### 📥 1. Secure Input")
+        with st.container(border=True):
+            st.markdown(
+                '<div class="workspace-title">📥 1. Secure Input</div>'
+                '<div class="workspace-sub">Document information + live biometric capture</div>',
+                unsafe_allow_html=True
+            )
             col1, col2 = st.columns([1, 1])
-            
+
             with col1:
+                st.markdown('<div class="workspace-col-label">📄 Document Upload</div>', unsafe_allow_html=True)
                 doc_type = st.selectbox("Document Category", ["E-Passport", "Tourist Visa", "National ID"])
                 uploaded_file = st.file_uploader("Upload Scanned File", type=["png", "jpg", "jpeg", "pdf"], label_visibility="collapsed")
-                
+                st.caption("Supported document/image input")
+
             with col2:
-                camera_input = st.camera_input("Live Biometric Capture")
+                st.markdown('<div class="workspace-col-label">🎥 Live Biometric Capture</div>', unsafe_allow_html=True)
+                camera_input = st.camera_input("Live Biometric Capture", label_visibility="collapsed")
 
         st.divider()
 
