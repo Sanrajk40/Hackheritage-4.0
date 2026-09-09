@@ -3,7 +3,6 @@ import pandas as pd
 import time
 from PIL import Image
 
-# --- PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="SecureID | SSB Terminal",
     page_icon="🛡️",
@@ -11,7 +10,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- SESSION STATE ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'user_info' not in st.session_state:
@@ -19,7 +17,6 @@ if 'user_info' not in st.session_state:
 
 import os
 
-# --- LOAD EXTERNAL CSS ---
 def load_css(file_name):
     with open(file_name) as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
@@ -28,7 +25,6 @@ try:
     load_css("design.css")
 except FileNotFoundError:
     st.warning("design.css not found. Please ensure it is in the same folder as app.py")
-# --- HELPER FUNCTION FOR METRICS ---
 def display_metric(title, value, status="pass"):
     card_class = "metric-card-pass" if status == "pass" else "metric-card-warn"
     html = f"""
@@ -39,9 +35,6 @@ def display_metric(title, value, status="pass"):
     """
     st.markdown(html, unsafe_allow_html=True)
 
-# ==========================================
-#               LOGIN MODULE
-# ==========================================
 def login_page():
     col1, col2, col3 = st.columns([1, 1.5, 1])
     
@@ -64,7 +57,6 @@ def login_page():
             password = st.text_input("Password", type="password")
             user_id = st.text_input("Officer ID", placeholder="e.g., ID-49201")
             
-            # --- EXPANDED AIRPORT & BORDER LIST ---
             airport_id = st.selectbox(
                 "Assigned Border / Airport Checkpoint", 
                 [
@@ -100,16 +92,9 @@ def login_page():
 
         st.markdown('<div class="login-footer-note">MHA SecureID · Government of India · SSB Restricted Network</div>', unsafe_allow_html=True)
 
-# ==========================================
-#             MAIN APPLICATION
-# ==========================================
 def main_app():
     with st.sidebar:
-        # NOTE (Phase 3): the previous st.image() call hotlinked an external
-        # Wikipedia-hosted asset, which is what was rendering as a broken image.
-        # Per the Phase 3 preservation rule, no logo/emblem is invented — this
-        # is a clean text-based identity treatment instead, with no external
-        # image dependency and no application-logic change.
+        
         st.markdown(
             '<div class="sb-gov-badge">'
             '<div class="sb-gov-badge-mark">GoI</div>'
