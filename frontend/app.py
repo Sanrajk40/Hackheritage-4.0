@@ -211,7 +211,7 @@ def main_app():
                         color = '#fee2e2' if val == 'Tampered' else ''
                         return f'background-color: {color}; color: #991b1b' if val == 'Tampered' else ''
                     
-                    st.dataframe(results.style.applymap(highlight_tampered, subset=['Status']), use_container_width=True, hide_index=True)
+                    st.dataframe(results.style.map(highlight_tampered, subset=['Status']), use_container_width=True, hide_index=True)
                     
                 with tab2:
                     st.write("**Processed Image Artifacts**")
