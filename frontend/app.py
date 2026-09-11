@@ -3,6 +3,9 @@ import pandas as pd
 import time
 from PIL import Image
 import requests
+#pls don't remove this this is important
+from OCR.pass_ocr import backend_passport_ocr
+
 
 st.set_page_config(
     page_title="SecureID | SSB Terminal",
@@ -190,7 +193,14 @@ def main_app():
             with col1:
                 st.markdown('<div class="workspace-col-label">📄 Document Upload</div>', unsafe_allow_html=True)
                 doc_type = st.selectbox("Document Category", ["E-Passport", "Tourist Visa", "National ID"])
-                uploaded_file = st.file_uploader("Upload Scanned File", type=["png", "jpg", "jpeg", "pdf"], label_visibility="collapsed")
+                if doc_type=='E-passport':
+                    passport = st.file_uploader("Upload Scanned File", type=["png", "jpg", "jpeg", "pdf"], label_visibility="collapsed")
+                elif doc_type=='Tourist Visa':
+                    visa=st.file_uploader("Upload Scanned File",type =['png','jpg','jpeg','pdf'],label_visibility="collapsed")
+                elif doc_type=='Nationa ID':
+                    doc=st.file_uploader("Upload Scanned File",type =['png','jpg','jpeg','pdf'],label_visibility="collapsed")
+
+                
                 st.caption("Supported document/image input")
 
             with col2:
@@ -199,7 +209,7 @@ def main_app():
 
         st.divider()
 
-        if uploaded_file is not None:
+        if passport and visa is not None:
             st.markdown("### 🔍 2. Analysis Dashboard")
             
             analyze_btn = st.button("Initialize Deep Scan & Ledger Sync", type="primary")
@@ -207,6 +217,14 @@ def main_app():
             if analyze_btn:
                 progress_bar = st.progress(0)
                 status_text = st.empty()
+
+                file_bytes = passport.read()
+                mime_type = passport.type
+                result = backend_passport_ocr(file_bytes,mime_type)
+
+                if result['success']:
+                    st.subheader("System has extracted these output pls check")
+                    st.code(result['Passport Details'],language='python')
                 
                 status_text.text("Scanning MRZ & Micro-printing...")
                 progress_bar.progress(25)
@@ -255,7 +273,7 @@ def main_app():
                     
                 with tab2:
                     st.write("**Processed Image Artifacts**")
-                    image = Image.open(uploaded_file)
+                    image = Image.open(passport)
                     st.image(image, caption="Uploaded Document (Enhancement Filters Applied)", width=400)
                     
                 with tab3:
