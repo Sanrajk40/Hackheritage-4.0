@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import time
 from PIL import Image
+import requests
 
 st.set_page_config(
     page_title="SecureID | SSB Terminal",
@@ -84,9 +85,33 @@ def login_page():
                     st.session_state.user_info = {
                         "username": username, "email": email, "user_id": user_id, "airport_id": airport_id
                     }
-                    st.success("Verification successful. Establishing secure connection...")
-                    time.sleep(1.2)
-                    st.rerun()
+                    # Please don't change this is very crucial
+                    payload={
+                        "username": username, "email": email, "user_id": user_id, "airport_id": airport_id,'password':password
+
+                    }
+                    django_url='http://127.0.0.1:8000/api/authenticate_global'
+                    response= requests.post(django_url,json=payload)
+                    if response.status_code==200:
+                        value = response.json().get('value')
+                        if value=='5':
+                            st.error("The user is already logged in.")
+                        elif value=='4':
+                            st.warning("The password did not match")
+                        elif value=='1':
+                            st.success("Verification successful. Establishing secure connection...")
+                            st.rerun()
+                            time.sleep(1.2)
+                        elif value=='2':
+                            st.warning("The airport id did not match")
+                        elif value=='0':
+                            st.warning("No user with this userid found")
+                    else:
+                        st.warning("Failed to connect to the server side")
+
+                    
+                    
+                    
                 else:
                     st.error("Authentication Failed: Missing mandatory credentials.")
 
@@ -130,9 +155,24 @@ def main_app():
         )
 
         if st.button("End Session (Logout)", use_container_width=True):
-            st.session_state.logged_in = False
-            st.session_state.user_info = {}
-            st.rerun()
+
+            # This is important for logging out pls donot change
+            empid=st.session_state.user_info['userid']
+            payload={'userid':empid}
+            django_url='http://127.0.0.1:8000/api/logout_global'
+            response=requests.post(django_url,json=payload)
+            if response.status_code==200:
+                st.session_state.logged_in = False
+                st.session_state.user_info = {}
+                st.rerun()
+            else:
+                st.warning("Failed to logout")
+
+
+
+            
+            
+            
 
     if app_mode == "🛂 Document Scanner":
         st.markdown('<div class="op-header-eyebrow">Document Scanner Module</div>', unsafe_allow_html=True)

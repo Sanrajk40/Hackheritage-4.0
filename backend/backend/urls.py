@@ -16,11 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from . import views
+from . import views,views2
+from . import block_chain
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/authenticate_global',views.addGlobalemp,name='Globally adding'),
-    path('api/logout_global',views.logout_global,name='Globally Logout')
+    path('api/logout_global',views.logout_global,name='Globally Logout'),
+    path('addToBlock',block_chain.add,name='Adding to BlockChain')
+    
 ]
